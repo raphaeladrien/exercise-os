@@ -1,0 +1,49 @@
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: an-amazing-pass
+      MYSQL_DATABASE: company
+      MYSQL_USER: user
+      MYSQL_PASSWORD: a-super-password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./seed/sql_db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - oddscanner
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - oddscanner
+  
+  flyway:
+    image: boxfuse/flyway
+    container_name: flyway
+    environment:
+      FLYWAY_URL: jdbc:mysql://mysql_db:3306/company?verifyServerCertificate=false
+      FLYWAY_USER: user
+      FLYWAY_PASSWORD: a-super-password
+    volumes:
+      - ./sql-migrations:/flyway/sql
+      - ./entrypoint.sh:/flyway/entrypoint.sh
+    depends_on:
+      - mysql
+    networks:
+      - oddscanner
+    entrypoint: ["/bin/sh", "/flyway/entrypoint.sh"]
+
+volumes:
+  mysql_data:
+
+networks:
+  oddscanner:
+    driver: bridge
